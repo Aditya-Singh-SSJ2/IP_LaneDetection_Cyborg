@@ -11,7 +11,7 @@ ym_per_pix = 30 / 720
 xm_per_pix = 3.7 / 720
 
 
-hardLeft = False
+hardLeft = hardRight = False
 yLow = None
 yHigh = None
 countdown = 0
@@ -100,7 +100,7 @@ def plotHistogram(inpImage):
 
 #### START - APPLY SLIDING WINDOW METHOD TO DETECT CURVES ######################
 def slide_window_search(binary_warped, histogram):
-    global hardLeft, yLow, yHigh, countdown
+    global hardLeft, yLow, yHigh, countdown, hardRight
     ### binary_wrapped -> Threshold birds eye view
 
     ### binary_warped.shape -> (480, 640) i.e. (width, height)
@@ -130,7 +130,7 @@ def slide_window_search(binary_warped, histogram):
     slide_horizontal_left_lane = False 
     slide_horizontal_right_lane = False 
     
-    if not hardLeft:
+    if not (hardLeft or hardRight):
         margin = 100    # width of the sliding window
         minpix = 50     # Set minimum number of pixels found to recenter window
         
@@ -188,13 +188,13 @@ def slide_window_search(binary_warped, histogram):
                 RprevYhigh = win_y_high
                 slide_horizontal_right_lane = True
             
-            if len(good_right_inds)>=1500:
+            if len(good_right_inds)>=1800:
                 hardLeft = True
                 yLow = win_y_low
                 yHigh = win_y_high
                 countdown = 60
     
-    else:
+    elif hardLeft:
         margin = 100    # width of the sliding window
         minpix = 100     # Set minimum number of pixels found to recenter window
         
@@ -212,45 +212,37 @@ def slide_window_search(binary_warped, histogram):
             win_xleft_high = leftx_current + 100
             win_xright_low = binary_warped.shape[1] - (window + 1) * window_height
             win_xright_high = binary_warped.shape[1] - window * window_height
-
-
-            if slide_horizontal_right_lane:
-                good_right_inds = ((nonzeroy >= RprevYlow) & (nonzeroy < RprevYhigh) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
-                cv2.rectangle(out_img, (RprevXlow,win_y_low), (RprevXhigh,win_y_high),(0,255,0), 2)
-            else:                
-                good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
-                cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
-            
             # Draw the windows on the visualization image
             cv2.rectangle(out_img, (win_xleft_low, binary_warped.shape[0]-10), (win_xleft_high, binary_warped.shape[0]),(0,255,0), 2)
-            # cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
+            cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
             # Identify the nonzero pixels in x and y within the window
     
             good_left_inds = ((nonzeroy >= binary_warped.shape[0]-10) & (nonzeroy < binary_warped.shape[0]) & (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
-            # good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
+            good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
             # Append these indices to the lists
             left_lane_inds.append(good_left_inds)
             right_lane_inds.append(good_right_inds)
             # If you found > minpix pixels, recenter next window on their mean position
             # print(len(good_left_inds))
 
-            print(len(good_right_inds))
+            # print(len(good_right_inds))
             if len(good_left_inds) > minpix:
                 leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
 
             if len(good_right_inds) > minpix:
                 yHigh = np.int(np.mean(nonzeroy[good_right_inds]))
 
-            if len(good_right_inds) < 50:
-                RprevXlow = win_xright_low
-                RprevXhigh = win_xright_high
-                slide_horizontal_right_lane = True
-
             countdown-=1
             if countdown==0:
                 hardLeft = False
                 yLow = None
                 yHigh = None
+            
+            print(len(good_right_inds))
+            if len(good_right_inds) < 500:
+                if window<=2 and countdown>5:
+                    countdown=2
+                break
 
     # Concatenate the arrays of indices
     left_lane_inds = np.concatenate(left_lane_inds)
