@@ -52,11 +52,6 @@ while True:
     u_s = cv2.getTrackbarPos("U - S", "Trackbars")
     u_v = cv2.getTrackbarPos("U - V", "Trackbars")
     
-    # lower = [0,0,0]
-    # upper = [179,179,179]
-
-    # cv2.circle(frame, (100,100), 5, (0,0,255), -1)
-    # pts1 = np.float32([[],[],[],[]])
     lower = np.array([l_h,l_s,l_v])
     upper = np.array([u_h,u_s,u_v])
     mask = cv2.inRange(result2, lower, upper)
@@ -64,24 +59,17 @@ while True:
     result = cv2.bitwise_and(frame, frame, mask = mask)
 
     
-
-    # cv2.imshow("Birds'Eye_HSV", result2)
     
-    # cv2.imshow("Result", result)
-    
-    # if cv2.waitKey(5) & 0xFF == 27: #exit only after 5 miliseconds and on esc key being pressed
-    #     break
-    # gray = cv2.cvtColor(result2, cv2.COLOR_BGR2GRAY)
-    # leftx = 0
-    # rightx = 0
-
+    ### HISTOGRAM
     # if leftx==0 and rightx==0:
     histogram = np.sum(mask[mask.shape[0]//2:, :], axis=0)
     midpoint = np.int(histogram.shape[0]/2)
     left_base = np.argmax(histogram[:midpoint])
     right_base = np.argmax(histogram[midpoint:]) + midpoint
 
-
+    
+    
+    ### SLIDING WINDOW
     y = 472
     lx = []
     rx = []
@@ -91,7 +79,7 @@ while True:
     # i = 0
     while y>0:
 
-        # Left threshhold
+        ## Left threshhold
         img = mask[ y-40 : y, left_base-50 : left_base+50]
         contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours:
@@ -102,10 +90,8 @@ while True:
                 lx.append(left_base-50 + cX)
                 left_base = left_base-50 + cX
 
-        # print(i, left_base)
-        # i += 1
 
-        # Right threshhold
+        ## Right threshhold
         img = mask[ y-40 : y, right_base-50 : right_base+50]
         contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for contour in contours:
@@ -120,18 +106,9 @@ while True:
         cv2.rectangle(msk,  (right_base-50, y),   (right_base+50, y-40), (255,0,0),    2)
         
         y-=40
-
     
     cv2.imshow("Frame", frame2)
     cv2.imshow("Mask", msk)
-
-    # # Draw Rectanglar windos here
-
-
-
-    # # Polyfit all the points from windows
-    # left_fit = np.polyfit(lefty, leftx, 2)
-    # right_fit = np.polyfit(righty, rightx, 2)
 
     key = cv2.waitKey(1)
     if key == 27:
