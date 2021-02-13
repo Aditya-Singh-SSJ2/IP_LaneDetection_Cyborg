@@ -14,7 +14,7 @@ xm_per_pix = 3.7 / 720
 def readVideo():
 
     # Read input video from current working directory
-    inpImage = cv2.VideoCapture("Bird's eye view/ip.mp4")
+    inpImage = cv2.VideoCapture("Bird's eye view/imgproc_samplevid.mp4")
 
     return inpImage
 #### END - FUNCTION TO READ AN INPUT IMAGE #####################################
@@ -28,6 +28,7 @@ def processImage(inpImage):
     upper_white = np.array([255, 255, 255])
     mask = cv2.inRange(inpImage, lower_white, upper_white)
     hls_result = cv2.bitwise_and(inpImage, inpImage, mask = mask)
+    cv2.imshow("IIIIII", hls)
 
     # Convert image to grayscale, apply threshold, blur & extract edges
     gray = cv2.cvtColor(hls_result, cv2.COLOR_BGR2GRAY)
@@ -45,16 +46,16 @@ def perspectiveWarp(inpImage):
     img_size = (inpImage.shape[1], inpImage.shape[0])
 
     # Perspective points to be warped
-    src = np.float32([[225, 387],
-                      [70, 472],
-                      [400, 380],
-                      [538, 472]])
+    src = np.float32([[154,317],
+                      [7,472],
+                      [558,317],
+                      [638,454]])
 
     # Window to be shown
     dst = np.float32([[0, 0],
                       [0, 600],
                       [500, 0],
-                      [500, 600]])
+                      [600, 600]])
 
     # Matrix to warp the image for birdseye window
     matrix = cv2.getPerspectiveTransform(src, dst)
@@ -142,6 +143,7 @@ def slide_window_search(binary_warped, histogram):
         left_lane_inds.append(good_left_inds)
         right_lane_inds.append(good_right_inds)
         # If you found > minpix pixels, recenter next window on their mean position
+        print(len(good_left_inds))
         if len(good_left_inds) > minpix:
             leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
         if len(good_right_inds) > minpix:
@@ -376,6 +378,7 @@ while True:
     birdView, birdViewL, birdViewR, minverse = perspectiveWarp(frame)
 
     img, hls, grayscale, thresh, blur, canny = processImage(birdView)
+    cv2.imshow('II', thresh)
 
     # Plot and display the histogram by calling the "get_histogram()" function
     # Provide this function with:
@@ -409,6 +412,16 @@ while True:
 
         # Adding text to our final image
         finalImg = addText(result, curveRad, curveDir, deviation, directionDev)
+
+        tl = (154,317)
+        bl = (7,472)
+        tr = (558,317)
+        br = (638,452)
+
+        cv2.circle(finalImg, tl, 5, (0,0,255), -1)
+        cv2.circle(finalImg, bl, 5, (0,0,255), -1)
+        cv2.circle(finalImg, tr, 5, (0,0,255), -1)
+        cv2.circle(finalImg, br, 5, (0,0,255), -1)
 
         cv2.imshow("Final", finalImg)
     except:
