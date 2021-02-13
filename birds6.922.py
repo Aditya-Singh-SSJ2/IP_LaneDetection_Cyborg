@@ -52,9 +52,9 @@ def perspectiveWarp(inpImage):
     img_size = (inpImage.shape[1], inpImage.shape[0])
 
     tl = (1,317)
-    bl = (11,462)
+    bl = (1,482)
     tr = (638,317)
-    br = (620,462)
+    br = (638,482)
 
     # Perspective points to be warped
     src = np.float32([tl,bl,tr,br])
@@ -132,7 +132,7 @@ def slide_window_search(binary_warped, histogram):
     
     if not (hardLeft or hardRight):
         margin = 100    # width of the sliding window
-        minpix = 50     # Set minimum number of pixels found to recenter window
+        minpix = 25     # Set minimum number of pixels found to recenter window
         
         # Create empty lists to receive left and right lane pixel indices
         left_lane_inds = []
@@ -178,21 +178,21 @@ def slide_window_search(binary_warped, histogram):
                     rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
 
             
-            if len(good_left_inds) > 800:
+            if len(good_left_inds) > 1000:
                 LprevYlow = win_y_low
                 LprevYhigh = win_y_high
                 slide_horizontal_left_lane = True
             
-            if len(good_right_inds) > 800:
+            if len(good_right_inds) > 1000:
                 RprevYlow = win_y_low
                 RprevYhigh = win_y_high
                 slide_horizontal_right_lane = True
             
-            if len(good_right_inds)>=1800:
+            if len(good_right_inds)>=1450:
                 hardLeft = True
                 yLow = win_y_low
                 yHigh = win_y_high
-                countdown = 60
+                countdown = 180
     
     elif hardLeft:
         margin = 100    # width of the sliding window
@@ -203,7 +203,6 @@ def slide_window_search(binary_warped, histogram):
         right_lane_inds = []
 
         window_height = np.int(binary_warped.shape[1] / nwindows)
-
         # Step through the windows one by one
         for window in range(nwindows):
             win_y_low = yHigh-margin
@@ -213,7 +212,7 @@ def slide_window_search(binary_warped, histogram):
             win_xright_low = binary_warped.shape[1] - (window + 1) * window_height
             win_xright_high = binary_warped.shape[1] - window * window_height
             # Draw the windows on the visualization image
-            cv2.rectangle(out_img, (win_xleft_low, binary_warped.shape[0]-10), (win_xleft_high, binary_warped.shape[0]),(0,255,0), 2)
+            cv2.rectangle(out_img, (win_xleft_low, binary_warped.shape[0]-50), (win_xleft_high, binary_warped.shape[0]),(0,255,0), 2)
             cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
             # Identify the nonzero pixels in x and y within the window
     
@@ -239,10 +238,12 @@ def slide_window_search(binary_warped, histogram):
                 yHigh = None
             
             print(len(good_right_inds))
-            if len(good_right_inds) < 500:
-                if window<=2 and countdown>5:
-                    countdown=2
+            if len(good_right_inds) < 1000:
+                if window<=1 and countdown>5:
+                    countdown = 5
                 break
+
+            
 
     # Concatenate the arrays of indices
     left_lane_inds = np.concatenate(left_lane_inds)
@@ -474,8 +475,8 @@ while True:
     birdView, birdViewL, birdViewR, minverse = perspectiveWarp(frame)
 
     img, hls, grayscale, thresh, blur, canny = processImage(birdView)
-    cv2.line(thresh, (630, 2), (630, 480), (255, 255, 255), thickness=1)
-    cv2.line(thresh, (20, 2), (20, 480), (255, 255, 255), thickness=1)
+    cv2.line(thresh, (590, 200), (630, 480), (255, 255, 255), thickness=1)
+    cv2.line(thresh, (100, 2), (20, 480), (255, 255, 255), thickness=1)
     cv2.imshow('II', thresh)
 
     # Plot and display the histogram by calling the "get_histogram()" function
