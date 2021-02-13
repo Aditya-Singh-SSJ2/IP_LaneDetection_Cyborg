@@ -37,6 +37,14 @@ while True:
     mask = cv2.resize(mask, (640, 480)) 
     result = cv2.bitwise_and(frame, frame, mask = mask)
 
+
+    pts1 = np.float32([[170,156], [1, 211], [268, 152], [426, 205]]) 
+    pts2 = np.float32([[0, 0], [0, 600], [500, 0], [500, 600]]) 
+    
+    matrix = cv2.getPerspectiveTransform(pts1, pts2) 
+    result2 = cv2.warpPerspective(frame, matrix, (500,600))
+    
+    cv2.imshow('t1-sol', result2)
     cv2.imshow("Frame", frame)
     cv2.imshow("Mask", mask)
     cv2.imshow("Result", result)
