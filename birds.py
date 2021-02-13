@@ -1,64 +1,50 @@
 import cv2
-# from matplotlib import pyplot as plt
 import numpy as np
-img = cv2.imread("Bird's eye view/t1.png")
 
-# IMAGE_H = 223
-# IMAGE_W = 1280
+cap = cv2.VideoCapture(0)
 
-# src = np.float32([[0, IMAGE_H], [1207, IMAGE_H], [0, 0], [IMAGE_W, 0]])
-# dst = np.float32([[569, IMAGE_H], [711, IMAGE_H], [0, 0], [IMAGE_W, 0]])
-# M = cv2.getPerspectiveTransform(src, dst) # The transformation matrix
+def nothing(x):
+    pass
 
-# img_ = img[450:(450+IMAGE_H), 0:IMAGE_W] # Apply np slicing for ROI crop
-# warped_img = cv2.warpPerspective(img_, M, (IMAGE_W, IMAGE_H)) # Image warping
+cv2.namedWindow("Trackbars")
 
-# while True:
-#     cv2.imshow('t1-case', warped_img)
-#     if cv2.waitKey(5) & 0xFF == 27: #exit only after 5 miliseconds and on esc key being pressed
-#         break
-
-cv2.circle(img, (170,156), 5, (0,0,255), -1)
-cv2.circle(img, (1,211), 5, (0,0,255), -1)
-cv2.circle(img, (268,152), 5, (0,0,255), -1)
-cv2.circle(img, (426,205), 5, (0,0,255), -1)
+cv2.createTrackbar("L - H", "Trackbars", 0, 179, nothing)
+cv2.createTrackbar("L - S", "Trackbars", 0, 179, nothing)
+cv2.createTrackbar("L - V", "Trackbars", 0, 179, nothing)
+cv2.createTrackbar("U - H", "Trackbars", 0, 179, nothing)
+cv2.createTrackbar("U - S", "Trackbars", 0, 179, nothing)
+cv2.createTrackbar("U - V", "Trackbars", 0, 179, nothing)
 
 while True:
-    cv2.imshow('t1-case', img)
-    if cv2.waitKey(5) & 0xFF == 27: #exit only after 5 miliseconds and on esc key being pressed
-        break
-while True:
-    # pts1 = np.float32([[82, 181], [82, 231], [335, 181], [335, 231]]) 
-    pts1 = np.float32([[170,156], [1, 211], [268, 152], [426, 205]]) 
-    pts2 = np.float32([[0, 0], [0, 600], [500, 0], [500, 600]]) 
-    #                   TL        BL       TR        BR
+    _, frame = cap.read()
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    frame = cv2.resize(frame, (640, 480)) 
+    l_h = cv2.getTrackbarPos("L - H", "Trackbars")
+    l_s = cv2.getTrackbarPos("L - S", "Trackbars")
+    l_v = cv2.getTrackbarPos("L - V", "Trackbars")
+    u_h = cv2.getTrackbarPos("U - H", "Trackbars")
+    u_s = cv2.getTrackbarPos("U - S", "Trackbars")
+    u_v = cv2.getTrackbarPos("U - V", "Trackbars")
     
-    matrix = cv2.getPerspectiveTransform(pts1, pts2) 
-    result = cv2.warpPerspective(img, matrix, (500,600))
-    cv2.imshow('t1-sol', result)
-    if cv2.waitKey(5) & 0xFF == 27: #exit only after 5 miliseconds and on esc key being pressed
+    # lower = [0,0,0]
+    # upper = [179,179,179]
+
+    # cv2.circle(frame, (100,100), 5, (0,0,255), -1)
+    # pts1 = np.float32([[],[],[],[]])
+    lower = np.array([l_h,l_s,l_v])
+    upper = np.array([u_h,u_s,u_v])
+    mask = cv2.inRange(hsv, lower, upper)
+    mask = cv2.resize(mask, (640, 480)) 
+    result = cv2.bitwise_and(frame, frame, mask = mask)
+
+    cv2.imshow("Frame", frame)
+    cv2.imshow("Mask", mask)
+    cv2.imshow("Result", result)
+    # if cv2.waitKey(5) & 0xFF == 27: #exit only after 5 miliseconds and on esc key being pressed
+    #     break
+    key = cv2.waitKey(1)
+    if key == 27:
         break
 
-img_fix = cv2.cvtColor(img,
-                        cv2.COLOR_BGR2RGB)
-hsv_img = cv2.cvtColor(img_fix,
-                        cv2.COLOR_RGB2HSV)
-
-light_orange = (0,0,0)
-dark_orange = (200, 100, 50)
-
-# # light_orange = (0,0,0)
-# # dark_orange = (222,222,222)
-
-mask = cv2.inRange(hsv_img, light_orange, dark_orange)
-
-result = cv2.bitwise_and(img_fix, img_fix, mask=mask)
-
-plt.imshow(mask, cmap="gray")
-# while True:
-#     cv2.imshow('t1-sol++', result)
-#     if cv2.waitKey(5) & 0xFF == 27: #exit only after 5 miliseconds and on esc key being pressed
-#         break
-
-
-################## OPENCV INRANGE FUNCTION ###################
+cap.release()
+cv2.destroyAllWindows()
