@@ -14,7 +14,7 @@ xm_per_pix = 3.7 / 720
 def readVideo():
 
     # Read input video from current working directory
-    inpImage = cv2.VideoCapture("Bird's eye view/imgproc_samplevid.mp4")
+    inpImage = cv2.VideoCapture("imgproc_samplevid.mp4")
 
     return inpImage
 #### END - FUNCTION TO READ AN INPUT IMAGE #####################################
@@ -28,7 +28,7 @@ def processImage(inpImage):
     upper_white = np.array([255, 255, 255])
     mask = cv2.inRange(inpImage, lower_white, upper_white)
     hls_result = cv2.bitwise_and(inpImage, inpImage, mask = mask)
-    cv2.imshow("IIIIII", hls)
+    # cv2.imshow('vv',hls_result)
 
     # Convert image to grayscale, apply threshold, blur & extract edges
     gray = cv2.cvtColor(hls_result, cv2.COLOR_BGR2GRAY)
@@ -45,17 +45,19 @@ def perspectiveWarp(inpImage):
     # Get image size
     img_size = (inpImage.shape[1], inpImage.shape[0])
 
+    tl = (1,317)
+    bl = (11,462)
+    tr = (638,317)
+    br = (620,462)
+
     # Perspective points to be warped
-    src = np.float32([[154,317],
-                      [7,472],
-                      [558,317],
-                      [638,454]])
+    src = np.float32([tl,bl,tr,br])
 
     # Window to be shown
     dst = np.float32([[0, 0],
                       [0, 600],
-                      [500, 0],
-                      [600, 600]])
+                      [700, 0],
+                      [700, 600]])
 
     # Matrix to warp the image for birdseye window
     matrix = cv2.getPerspectiveTransform(src, dst)
@@ -125,6 +127,9 @@ def slide_window_search(binary_warped, histogram):
     left_lane_inds = []
     right_lane_inds = []
 
+    slide_horizontal_left_lane = False 
+    slide_horizontal_right_lane = False 
+
     # Step through the windows one by one
     for window in range(nwindows):
         win_y_low = binary_warped.shape[0] - (window + 1) * window_height
@@ -134,20 +139,47 @@ def slide_window_search(binary_warped, histogram):
         win_xright_low = rightx_current - margin
         win_xright_high = rightx_current + margin
         # Draw the windows on the visualization image
-        cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high),(0,255,0), 2)
-        cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
+        # cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high),(0,255,0), 2)
+        # cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
         # Identify the nonzero pixels in x and y within the window
-        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
-        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
+        if slide_horizontal_left_lane:
+            good_left_inds = ((nonzeroy >= LprevYlow) & (nonzeroy < LprevYhigh) & (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
+            cv2.rectangle(out_img, (win_xleft_low,LprevYlow), (win_xleft_high, LprevYhigh),(0,255,0), 2)
+        else:
+            cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high),(0,255,0), 2)
+            good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
+        if slide_horizontal_right_lane:
+            good_right_inds = ((nonzeroy >= RprevYlow) & (nonzeroy < RprevYhigh) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
+            cv2.rectangle(out_img, (win_xright_low,RprevYlow), (win_xright_high,RprevYhigh),(0,255,0), 2)
+        else:
+            good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
+            cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
+        # good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
+        # good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
         # Append these indices to the lists
         left_lane_inds.append(good_left_inds)
         right_lane_inds.append(good_right_inds)
         # If you found > minpix pixels, recenter next window on their mean position
-        print(len(good_left_inds))
-        if len(good_left_inds) > minpix:
-            leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
-        if len(good_right_inds) > minpix:
-            rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
+        # print(len(good_left_inds))
+        if not slide_horizontal_left_lane:
+            if len(good_left_inds) > minpix:
+                leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
+        if not slide_horizontal_right_lane:
+            if len(good_right_inds) > minpix:
+                rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
+
+        if len(good_left_inds) > 800:
+            LprevYlow = win_y_low
+            LprevYhigh = win_y_high
+            slide_horizontal_left_lane = True
+        
+        if len(good_right_inds) > 800:
+            RprevYlow = win_y_low
+            RprevYhigh = win_y_high
+            slide_horizontal_right_lane = True
+            
+        
+        # print("slide_horizontal_left_lane", slide_horizontal_left_lane, "slide_horizontal_right_lane", slide_horizontal_right_lane)
 
     # Concatenate the arrays of indices
     left_lane_inds = np.concatenate(left_lane_inds)
@@ -369,6 +401,7 @@ def addText(img, radius, direction, deviation, devDirection):
 # Read the input image
 image = readVideo()
 
+
 while True:
 
     _, frame = image.read()
@@ -378,6 +411,8 @@ while True:
     birdView, birdViewL, birdViewR, minverse = perspectiveWarp(frame)
 
     img, hls, grayscale, thresh, blur, canny = processImage(birdView)
+    cv2.line(thresh, (600, 2), (600, 480), (255, 255, 255), thickness=1)
+    cv2.line(thresh, (20, 2), (20, 480), (255, 255, 255), thickness=1)
     cv2.imshow('II', thresh)
 
     # Plot and display the histogram by calling the "get_histogram()" function
@@ -413,22 +448,13 @@ while True:
         # Adding text to our final image
         finalImg = addText(result, curveRad, curveDir, deviation, directionDev)
 
-        tl = (154,317)
-        bl = (7,472)
-        tr = (558,317)
-        br = (638,452)
-
-        cv2.circle(finalImg, tl, 5, (0,0,255), -1)
-        cv2.circle(finalImg, bl, 5, (0,0,255), -1)
-        cv2.circle(finalImg, tr, 5, (0,0,255), -1)
-        cv2.circle(finalImg, br, 5, (0,0,255), -1)
-
-        cv2.imshow("Final", finalImg)
+        # cv2.imshow("Final", finalImg)
     except:
-        cv2.imshow("Final", frame)
+        # cv2.imshow("Final", frame)
+        pass
         
     # Displaying final image
-    # cv2.imshow("Final", finalImg)
+    cv2.imshow("Final", finalImg)
 
 
     # Wait for the ENTER key to be pressed to stop playback
