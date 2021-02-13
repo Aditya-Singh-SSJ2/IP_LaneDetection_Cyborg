@@ -130,7 +130,9 @@ def slide_window_search(binary_warped, histogram):
     slide_horizontal_left_lane = False 
     slide_horizontal_right_lane = False 
     
-    if not (hardLeft or hardRight):
+    ### IF NOT HARDLEFT OR HARDRIGT, VERTICLE SLIDING WINDO
+    ### ELSE, HORIZONTAL SLIDING WINDOW
+    if not (hardLeft or hardRight):     # hardLeft and hardRight are global boolean variables 
         margin = 100    # width of the sliding window
         minpix = 25     # Set minimum number of pixels found to recenter window
         
@@ -148,8 +150,7 @@ def slide_window_search(binary_warped, histogram):
             win_xright_low = rightx_current - margin
             win_xright_high = rightx_current + margin
             # Draw the windows on the visualization image
-            # cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high),(0,255,0), 2)
-            # cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
+            # And,
             # Identify the nonzero pixels in x and y within the window
             if slide_horizontal_left_lane:
                 good_left_inds = ((nonzeroy >= LprevYlow) & (nonzeroy < LprevYhigh) & (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
@@ -163,13 +164,10 @@ def slide_window_search(binary_warped, histogram):
             else:
                 good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
                 cv2.rectangle(out_img, (win_xright_low,win_y_low), (win_xright_high,win_y_high),(0,255,0), 2)
-            # good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
-            # good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
             # Append these indices to the lists
             left_lane_inds.append(good_left_inds)
             right_lane_inds.append(good_right_inds)
             # If you found > minpix pixels, recenter next window on their mean position
-            # print(len(good_left_inds))
             if not slide_horizontal_left_lane:
                 if len(good_left_inds) > minpix:
                     leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
@@ -182,17 +180,19 @@ def slide_window_search(binary_warped, histogram):
                 LprevYlow = win_y_low
                 LprevYhigh = win_y_high
                 slide_horizontal_left_lane = True
+                # no timer
             
             if len(good_right_inds) > 1000:
                 RprevYlow = win_y_low
                 RprevYhigh = win_y_high
                 slide_horizontal_right_lane = True
+                # no timer
             
             if len(good_right_inds)>=1450:
                 hardLeft = True
                 yLow = win_y_low
                 yHigh = win_y_high
-                countdown = 180
+                countdown = 180 #Timer
     
     elif hardLeft:
         margin = 100    # width of the sliding window
@@ -221,10 +221,8 @@ def slide_window_search(binary_warped, histogram):
             # Append these indices to the lists
             left_lane_inds.append(good_left_inds)
             right_lane_inds.append(good_right_inds)
+            
             # If you found > minpix pixels, recenter next window on their mean position
-            # print(len(good_left_inds))
-
-            # print(len(good_right_inds))
             if len(good_left_inds) > minpix:
                 leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
 
@@ -266,19 +264,9 @@ def slide_window_search(binary_warped, histogram):
 
     ltx = np.trunc(left_fitx)
     rtx = np.trunc(right_fitx)
-    # plt.plot(right_fitx)
-    # plt.show()
 
     out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
     out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
-
-    # plt.imshow(out_img)
-    # plt.plot(left_fitx,  ploty, color = 'yellow')
-    # plt.plot(right_fitx, ploty, color = 'yellow')
-    # plt.xlim(0, 1280)
-    # plt.ylim(720, 0)
-
-    # plt.show()
 
     cv2.imshow("Image", out_img)
 
@@ -334,7 +322,6 @@ def general_search(binary_warped, left_fit, right_fit):
     cv2.fillPoly(window_img, np.int_([right_line_pts]), (0, 255, 0))
     result = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
 
-    # plt.imshow(result)
     plt.plot(left_fitx,  ploty, color = 'yellow')
     plt.plot(right_fitx, ploty, color = 'yellow')
     plt.xlim(0, 1280)
@@ -483,10 +470,10 @@ while True:
     # Provide this function with:
     # 1- an image to calculate histogram on (thresh)
     hist, leftBase, rightBase = plotHistogram(thresh)
-    # print(rightBase - leftBase)
     plt.plot(hist)
-    # plt.show()
 
+
+    # If any error in lane binary detection, ignore and not end the program
     try:
         # cv2.imshow("thresh", thresh)
         ploty, left_fit, right_fit, left_fitx, right_fitx = slide_window_search(thresh, hist)
@@ -512,9 +499,7 @@ while True:
         # Adding text to our final image
         finalImg = addText(result, curveRad, curveDir, deviation, directionDev)
 
-        # cv2.imshow("Final", finalImg)
     except:
-        # cv2.imshow("Final", frame)
         pass
         
     # Displaying final image
